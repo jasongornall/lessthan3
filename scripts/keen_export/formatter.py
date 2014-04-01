@@ -9,12 +9,12 @@ from urlparse import parse_qsl
 class formatter:
     @staticmethod
     def isRequestData(text=""):
-        arrayElements=re.findall("(?<=\[).*?(?=\])",text)
-        remainingElements=text.split
-        if 'request' in arrayElements:
+        array_elements=re.findall("(?<=\[).*?(?=\])",text)
+        remaining_elements=text.split
+        if 'request' in array_elements:
             return True
         else:
-            pprint(arrayElements)
+            pprint(array_elements)
             return False
     @staticmethod
     def formatRequestData(text=""):
@@ -22,7 +22,7 @@ class formatter:
         data=[{}]
         #pprint(text)
         ##get array elements
-        arrayElements=re.findall("(?<=\[).*?(?=\])",text)
+        array_elements=re.findall("(?<=\[).*?(?=\])",text)
         
         text=re.sub("\[.+?\]", '', text)
 
@@ -31,34 +31,33 @@ class formatter:
         temp=re.findall("\{.+?\}",text)
         text=re.sub("\{.+?\}", '', text)
 
-        jsonElements=json.loads(temp[0])
+        json_elements=json.loads(temp[0])
 
         #get remaining elements
-        remainingElements=text.split()
-        if 'request' in arrayElements:
+        remaining_elements=text.split()
+        if 'request' in array_elements:
             #referrer parsing
     
 
+            # basic Breaking
+            user_agent_raw=array_elements[1];
 
-             #basic Breaking
-            userAgentRaw=arrayElements[1];
+            user_agent_paren=re.findall("(?<=\().*?(?=\))",user_agent_raw)
+            user_agent_raw=re.sub("\(.+?\)", '', user_agent_raw)
 
-            userAgentParen=re.findall("(?<=\().*?(?=\))",userAgentRaw)
-            userAgentRaw=re.sub("\(.+?\)", '', userAgentRaw)
-
-            userAgentSplit=userAgentRaw.split()
+            user_agent_split=user_agent_raw.split()
 
 
             #engine
-            split=userAgentSplit[1].split('/')
+            split=user_agent_split[1].split('/')
             engine_name=split[0]
             engine_version=split[1]
 
-            pprint (arrayElements[1])
-            pprint (userAgentSplit)
+            pprint (array_elements[1])
+            pprint (user_agent_split)
 
             #browser
-            split=userAgentSplit[2].split('/')
+            split=user_agent_split[2].split('/')
             browser_name=split[0]
             browser_version=split[1]
             version_split=split[1].split('.')
@@ -69,7 +68,7 @@ class formatter:
 
             #OS
             # grab first 4_4_4 or 2.2.2
-            os_raw=userAgentParen[0]
+            os_raw=user_agent_paren[0]
             os_version=re.findall("[\d][\d\._]+[\d]",os_raw)[0]
             os_version=re.sub('_','.',os_version)
             version_split=os_version.split('.')
@@ -86,13 +85,13 @@ class formatter:
             pprint (os_version)
 
             data = [{
-            "status": jsonElements['status'],
-            "latency": jsonElements['latency'],
-            "protocol": jsonElements['protocol'],
-            "url": remainingElements[1],
-            "cache": jsonElements['cache'],
-            "user_agent_string": arrayElements[1],
-            "host": jsonElements['host'],
+            "status": json_elements['status'],
+            "latency": json_elements['latency'],
+            "protocol": json_elements['protocol'],
+            "url": remaining_elements[1],
+            "cache": json_elements['cache'],
+            "user_agent_string": array_elements[1],
+            "host": json_elements['host'],
             "user_agent": {
                 "device": {
                     "family": "Other"
@@ -111,18 +110,19 @@ class formatter:
                     "patch": browser_patch
                 }
             },
-            "referrer": remainingElements[2],
-            "path": jsonElements['path'],
-            "ip_address": remainingElements[0],
-            "method": jsonElements['method'],
-            "size": jsonElements['size']
+            "referrer": remaining_elements[2],
+            "path": json_elements['path'],
+            "ip_address": remaining_elements[0],
+            "method": json_elements['method'],
+            "size": json_elements['size']
         }]
         return data
+
     @staticmethod
     def isPingData(text=""):
-        arrayElements=re.findall("(?<=\[).*?(?=\])",text)
-        remainingElements=text.split
-        if 'ping' in arrayElements:
+        array_elements=re.findall("(?<=\[).*?(?=\])",text)
+        remaining_elements=text.split
+        if 'ping' in array_elements:
             return True
         else:
             return False
@@ -132,7 +132,7 @@ class formatter:
         data=[{}]
         #pprint(text)
         ##get array elements
-        arrayElements=re.findall("(?<=\[).*?(?=\])",text)
+        array_elements=re.findall("(?<=\[).*?(?=\])",text)
         
         text=re.sub("\[.+?\]", '', text)
 
@@ -141,50 +141,50 @@ class formatter:
         temp=re.findall("\{.+?\}",text)
         text=re.sub("\{.+?\}", '', text)
 
-        jsonElements=json.loads(temp[0])
+        json_elements=json.loads(temp[0])
 
         #get remaining elements
-        remainingElements=text.split()
-        pprint(arrayElements)
-        if 'ping' in arrayElements:
+        remaining_elements=text.split()
+        pprint(array_elements)
+        if 'ping' in array_elements:
             #referrer parsing
 
-            refStr=(remainingElements[4].split(','))
-            refString=refStr[0]
-            ref=urlparse(refString)
+            ref_str=(remaining_elements[4].split(','))
+            ref_string=ref_str[0]
+            ref=urlparse(ref_string)
             refParams=dict(parse_qsl(ref.query))
 
             #url parsing
-            urlString=(refParams['url'])
-            url=urlparse(urlString)
+            url_string=(refParams['url'])
+            url=urlparse(url_string)
             queryParams=parse_qsl(url.query)
 
 
             #user_agent parsing
 
             #basic Breaking
-            userAgentRaw=arrayElements[1];
+            user_agent_raw=array_elements[1];
 
-            userAgentParen=re.findall("(?<=\().*?(?=\))",userAgentRaw)
-            userAgentRaw=re.sub("\(.+?\)", '', userAgentRaw)
+            user_agent_paren=re.findall("(?<=\().*?(?=\))",user_agent_raw)
+            user_agent_raw=re.sub("\(.+?\)", '', user_agent_raw)
 
-            userAgentSplit=userAgentRaw.split()
+            user_agent_split=user_agent_raw.split()
 
 
             #engine
-            split=userAgentSplit[1].split('/')
+            split=user_agent_split[1].split('/')
             engine_name=split[0]
             engine_version=split[1]
 
             #browser
-            split=userAgentSplit[3].split('/')
-            split_2=userAgentSplit[2].split('/')
+            split=user_agent_split[3].split('/')
+            split_2=user_agent_split[2].split('/')
             browser_name=split[0]
             browser_version=split_2[1]
             browser_major=re.findall("^\d+(?=\.)",split_2[1])
             #OS
             # grab first 4_4_4 or 2.2.2
-            os_raw=userAgentParen[0]
+            os_raw=user_agent_paren[0]
             os_version=re.findall("[\d][\d\._]+[\d]",os_raw)[0]
             os_version=re.sub('_','.',os_version)
             os_raw=re.sub("[\d][\d\._]+[\d]","",os_raw)
@@ -198,7 +198,7 @@ class formatter:
                 "domain": url.netloc,
                 "protocol": url.scheme,
                 "port": url.port,
-                "source": urlString,
+                "source": url_string,
                 "path": url.path,
                 "anchor": ""
             },
@@ -206,33 +206,33 @@ class formatter:
                 "domain": ref.netloc,
                 "protocol": ref.scheme,
                 "port": ref.port,
-                "source": refString,
+                "source": ref_string,
                 "path": ref.path,
                 "anchor": ""
             },
-            "ip_address": arrayElements[0],
+            "ip_address": array_elements[0],
             "app": {
-                "package_id": jsonElements['app_package_id'],
-                "_id": jsonElements['app_id'],
-                "package_version": jsonElements['app_package_version'],
-                "slug": jsonElements['app_slug']
+                "package_id": json_elements['app_package_id'],
+                "_id": json_elements['app_id'],
+                "package_version": json_elements['app_package_version'],
+                "slug": json_elements['app_slug']
             },
             "site": {
-                "_id": jsonElements['site_id'],
-                "slug": jsonElements['site_slug']
+                "_id": json_elements['site_id'],
+                "slug": json_elements['site_slug']
             },
-            "elapsed": jsonElements['elapsed'],
+            "elapsed": json_elements['elapsed'],
             "permanent_tracker": "??????????????",
             "engaged": 
             {
-                "10": jsonElements['engaged_10'],
-                "30": jsonElements['engaged_30'],
-                "60": jsonElements['engaged_60']
+                "10": json_elements['engaged_10'],
+                "30": json_elements['engaged_30'],
+                "60": json_elements['engaged_60']
             },
             "page": {
-                "_id": jsonElements['page_id'],
-                "type": jsonElements['page_type'],
-                "slug": jsonElements['page_slug']
+                "_id": json_elements['page_id'],
+                "type": json_elements['page_type'],
+                "slug": json_elements['page_slug']
             },
             "user_agent": {
                 "engine": {
@@ -250,4 +250,137 @@ class formatter:
                 }
             }
         	}]
+        return data
+    @staticmethod
+    def isPingData(text=""):
+        array_elements=re.findall("(?<=\[).*?(?=\])",text)
+        remaining_elements=text.split
+        if 'ping' in array_elements:
+            return True
+        else:
+            return False
+    @staticmethod
+    def formatPingData(text=""):
+        #Application of data
+        data=[{}]
+        #pprint(text)
+        ##get array elements
+        array_elements=re.findall("(?<=\[).*?(?=\])",text)
+        
+        text=re.sub("\[.+?\]", '', text)
+
+        #get json elements
+
+        temp=re.findall("\{.+?\}",text)
+        text=re.sub("\{.+?\}", '', text)
+
+        json_elements=json.loads(temp[0])
+
+        #get remaining elements
+        remaining_elements=text.split()
+        pprint(array_elements)
+        if 'ping' in array_elements:
+            #referrer parsing
+
+            ref_str=(remaining_elements[4].split(','))
+            ref_string=ref_str[0]
+            ref=urlparse(ref_string)
+            refParams=dict(parse_qsl(ref.query))
+
+            #url parsing
+            url_string=(refParams['url'])
+            url=urlparse(url_string)
+            queryParams=parse_qsl(url.query)
+
+
+            #user_agent parsing
+
+            #basic Breaking
+            user_agent_raw=array_elements[1];
+
+            user_agent_paren=re.findall("(?<=\().*?(?=\))",user_agent_raw)
+            user_agent_raw=re.sub("\(.+?\)", '', user_agent_raw)
+
+            user_agent_split=user_agent_raw.split()
+
+
+            #engine
+            split=user_agent_split[1].split('/')
+            engine_name=split[0]
+            engine_version=split[1]
+
+            #browser
+            split=user_agent_split[3].split('/')
+            split_2=user_agent_split[2].split('/')
+            browser_name=split[0]
+            browser_version=split_2[1]
+            browser_major=re.findall("^\d+(?=\.)",split_2[1])
+            #OS
+            # grab first 4_4_4 or 2.2.2
+            os_raw=user_agent_paren[0]
+            os_version=re.findall("[\d][\d\._]+[\d]",os_raw)[0]
+            os_version=re.sub('_','.',os_version)
+            os_raw=re.sub("[\d][\d\._]+[\d]","",os_raw)
+            os_raw=re.sub("  "," ",os_raw)
+            os_pieces=os_raw.split(';')
+            os_name=os_pieces[1].strip()
+
+
+            data = [{
+            "url": {
+                "domain": url.netloc,
+                "protocol": url.scheme,
+                "port": url.port,
+                "source": url_string,
+                "path": url.path,
+                "anchor": ""
+            },
+            "referrer": {
+                "domain": ref.netloc,
+                "protocol": ref.scheme,
+                "port": ref.port,
+                "source": ref_string,
+                "path": ref.path,
+                "anchor": ""
+            },
+            "ip_address": array_elements[0],
+            "app": {
+                "package_id": json_elements['app_package_id'],
+                "_id": json_elements['app_id'],
+                "package_version": json_elements['app_package_version'],
+                "slug": json_elements['app_slug']
+            },
+            "site": {
+                "_id": json_elements['site_id'],
+                "slug": json_elements['site_slug']
+            },
+            "elapsed": json_elements['elapsed'],
+            "permanent_tracker": "??????????????",
+            "engaged": 
+            {
+                "10": json_elements['engaged_10'],
+                "30": json_elements['engaged_30'],
+                "60": json_elements['engaged_60']
+            },
+            "page": {
+                "_id": json_elements['page_id'],
+                "type": json_elements['page_type'],
+                "slug": json_elements['page_slug']
+            },
+            "user_agent": {
+                "engine": {
+                    "version": engine_version,
+                    "name": engine_name
+                },
+                "os": {
+                    "version": os_version,
+                    "name": os_name
+                },
+                "browser": {
+                    "major": browser_major[0],
+                    "version": browser_version,
+                    "name": browser_name
+                }
+            }
+            }]
         return data
