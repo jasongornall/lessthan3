@@ -5,8 +5,40 @@ from pprint import pprint
 import sys
 from urlparse import urlparse
 from urlparse import parse_qsl
+import httpagentparser
 
 class formatter:
+    @staticmethod
+    # specific stuff done to the augmented string unique to us
+    def augmentAgentString(agentString,raw):
+
+        if ('os' in agentString):
+            if ('flavor' in agentString):
+                agentString['os']=agentString['flavor']
+                if ('X' in agentString['os']['version']):
+                    agentString['os']['version']=agentString['os']['version'].replace('X',"")
+                    agentString['os']['name']+=' X'
+
+            #hack cause they don't grab iphone version too well grab ios
+            #looks for 34234_43343_343
+            if (not 'version' in agentString['os'] or agentString['os']['version']==""):
+                arr=re.findall('\d+_[\d|\_]+(?=\s|\))',raw)
+                if (len(arr)>0):
+                    agentString['os']['version']=arr[0]
+
+            #hack for looking in the dist.. sometimes that is what we want
+            if (not 'version' in agentString['os'] or agentString['os']['version']==""):
+                if ('dist' in agentString):
+                    agentString['os']=agentString['dist']
+
+            #some OS's have a characters in their version... look for those Linux x86.64 is a example
+            if (not 'version' in agentString['os'] and 'name' in agentString['os']):
+                arr=re.findall("(?<="+agentString['os']['name']+")[^;]*",raw)
+                if (len(arr)==1):
+                    agentString['os']['version']=arr[0].strip()
+        return agentString
+
+
     @staticmethod
     def isRequestData(text=""):
         array_elements=re.findall("(?<=\[).*?(?=\])",text)
@@ -36,50 +68,13 @@ class formatter:
         if 'request' in array_elements:
             #referrer parsing
     
-
-            # basic Breaking
+             # basic Breaking
             user_agent_raw=array_elements[1];
 
             user_agent_paren=re.findall("(?<=\().*?(?=\))",user_agent_raw)
             user_agent_raw=re.sub("\(.+?\)", '', user_agent_raw)
-
             user_agent_split=user_agent_raw.split()
 
-
-            #engine
-            split=user_agent_split[1].split('/')
-            engine_name=split[0]
-            engine_version=split[1]
-
-
-            #browser
-            split=user_agent_split[2].split('/')
-            browser_name=split[0]
-            browser_version=split[1]
-            version_split=split[1].split('.')
-            browser_major= version_split[0] if len(version_split)>0 else None
-            browser_minor=version_split[1] if len(version_split)>1 else None
-            browser_patch=version_split[2] if len(version_split)>2 else None
-
-
-            #OS
-            # grab first 4_4_4 or 2.2.2
-            os_raw=user_agent_paren[0]
-            os_version=re.findall("[\d][\d\._]+[\d]",os_raw)[0]
-            os_version=re.sub('_','.',os_version)
-            version_split=os_version.split('.')
-            os_major= version_split[0] if len(version_split)>0 else None
-            os_minor= version_split[1] if len(version_split)>1 else None
-            os_patch= version_split[2] if len(version_split)>2 else None
-            os_minor_patch= version_split[3] if len(version_split)>3 else None
-
-            os_raw=re.sub("[\d][\d\._]+[\d]","",os_raw)
-            os_raw=re.sub("  "," ",os_raw)
-            os_pieces=os_raw.split(';')
-            os_name=os_raw
-            if ';' in os_raw:
-                os_pieces=os_raw.split(';')
-                os_name=os_pieces[1].strip()
 
 
             data = [{
@@ -89,10 +84,65 @@ class formatter:
             "url": remaining_elements[1],
             "cache": json_elements['cache'],
             "user_agent_string": array_elements[1],
-            "host": json_elements['host'],
-            "user_agent": {
+            "path": json_elements['path'],
+            "ip_address": remaining_elements[0],
+            "method": json_elements['method'],
+            "size": json_elements['size']
+            }]
+
+            agentString=httpagentparser.detect(array_elements[1])
+
+            # browser processing
+            browser_major=""
+            browser_minor=""
+            browser_patch=""
+            browser_name=""
+            if ('browser' in agentString):
+                browser_name=agentString['browser']['name']
+                if ('version' in agentString['browser']):
+                    agentString['browser']['version'].replace('_','.')
+                    split=agentString['browser']['version'].split('.')
+                    if (split):
+                        browser_major=split[0] if len(split)>0 else ""
+                        browser_minor=split[1] if len(split)>1 else ""
+                        browser_patch=split[2] if len(split)>2 else ""
+
+            
+            # os processing
+            os_major=""
+            os_minor=""
+            os_patch=""
+            os_name=""
+            os_minor_patch=""
+            split=[]
+            pprint(agentString)
+            agentString=formatter.augmentAgentString(agentString,array_elements[1])
+            if ('os' in agentString):
+                #make all of them period based
+                if ('version' in agentString['os']):
+                    agentString['os']['version']=agentString['os']['version'].replace('_','.')
+                    split=agentString['os']['version'].split('.')
+
+                    if (split):
+                        os_major=split[0] if len(split)>0 else ""
+                        os_minor=split[1] if len(split)>1 else ""
+                        os_patch=split[2] if len(split)>2 else ""
+                        os_minor_patch=split[3] if len(split)>3 else ""
+                os_name=agentString['os']['name']
+
+
+
+            # device processing
+            device_family="Other"
+            if ('dist' in agentString and 'name' in agentString['dist']):
+                device_family=agentString['dist']['name']
+
+
+
+            data[0]["user_agent"] =  {
+                "data":agentString,
                 "device": {
-                    "family": "Other"
+                    "family":device_family
                 },
                 "os": {
                     "major": os_major,
@@ -107,13 +157,10 @@ class formatter:
                     "family": browser_name,
                     "patch": browser_patch
                 }
-            },
-            "referrer": remaining_elements[2],
-            "path": json_elements['path'],
-            "ip_address": remaining_elements[0],
-            "method": json_elements['method'],
-            "size": json_elements['size']
-        }]
+            }
+
+
+        
         return data
 
     @staticmethod
@@ -153,12 +200,11 @@ class formatter:
             user_agent_paren=re.findall("(?<=\().*?(?=\))",user_agent_raw)
             user_agent_raw=re.sub("\(.+?\)", '', user_agent_raw)
             user_agent_split=user_agent_raw.split()
-
-
-          
-
+            agentString=httpagentparser.detect(array_elements[1])
 
             data = [{
+            "data": agentString,
+            "data_raw": array_elements[1],
             "url": {
                 "domain": url.netloc,
                 "protocol": url.scheme,
@@ -192,75 +238,59 @@ class formatter:
                 "slug": json_elements['page_slug']
             },
         	}]
-            if (not 'Mobile' in user_agent_raw):
-                  #engine
-                if (len(user_agent_split)>1 and '/' in user_agent_split[1]):
-                    split=user_agent_split[1].split('/')
-                    engine_name=split[0]
-                    engine_version=split[1]
-                elif ('/' in user_agent_split[0]):
-                    split=user_agent_split[0].split('/')
-                    engine_name=split[0]
-                    engine_version=split[1]
+              #engine
+            if (len(user_agent_split)>1 and '/' in user_agent_split[1]):
+                split=user_agent_split[1].split('/')
+                engine_name=split[0]
+                engine_version=split[1]
+            elif ('/' in user_agent_split[0]):
+                split=user_agent_split[0].split('/')
+                engine_name=split[0]
+                engine_version=split[1]
 
-                #browser
+            # browser processing
+            browser_major=""
+            browser_name=""
+            browser_version=""
+            if ('browser' in agentString):
+                browser_name=agentString['browser']['name']
+                if ('version' in agentString['browser']):
+                    agentString['browser']['version']=agentString['browser']['version'].replace('_','.')
+                    split=agentString['browser']['version'].split('.')
+                    browser_version=agentString['browser']['version']
+                    if (split):
+                        browser_major=split[0] if len(split)>0 else ""
 
-                browser_name=""
-                browser_version=""
-                browser_major=[""]
-                if (len(user_agent_split)>3):
-                    split=user_agent_split[3].split('/')
-                    split_2=user_agent_split[2].split('/')
-                    browser_name=split[0]
-                    browser_version=split_2[1]
-                    browser_major=re.findall("^\d+(?=\.)",split_2[1])
-                elif (len(user_agent_split)>2):
-                    split=user_agent_split[2].split('/')
-                    browser_name=split[0]
-                    if (len(split)>1):
-                        browser_version=split[1]
-                        browser_major=re.findall("^\d+(?=\.)",split[1])
-                elif (len(user_agent_split)>0):
-                    split=user_agent_split[0].split('/')
-                    browser_name=split[0]
-                    if (len(split)>1):
-                        browser_version=split[1]
-                        browser_major=re.findall("^\d+(?=\.)",split[1])
-
-                #OS
-                # grab first 4_4_4 or 2.2.2
-                os_raw=user_agent_paren[0]
-                pprint('-----')
-                pprint(os_raw)
-                os_split=re.findall("[\d][\d\._]+[\d]",os_raw)
-                os_version=""
-                if (len(os_split)>0):
-                    os_version=os_split[0]
-                    os_version=re.sub('_','.',os_version)
-                    os_raw=re.sub("[\d][\d\._]+[\d]","",os_raw)
-                    os_raw=re.sub("  "," ",os_raw)
-
-                os_name=os_raw
-                if ';' in os_raw:
-                    os_pieces=os_raw.split(';')
-                    os_name=os_pieces[1].strip()
+            
+            # os processing
+            os_name=""
+            os_version=""
+            pprint(agentString)
+            agentString=formatter.augmentAgentString(agentString,array_elements[1])
+            if ('os' in agentString):
+                #make all of them period based
+                if ('version' in agentString['os']):
+                    agentString['os']['version']=agentString['os']['version'].replace('_','.')
+                    os_version=agentString['os']['version']                   
+                   
+                os_name=agentString['os']['name']
 
 
-                data[0]["user_agent"] =  {
-                    "engine": {
-                        "version": engine_version,
-                        "name": engine_name
-                    },
-                    "os": {
-                        "version": os_version,
-                        "name": os_name
-                    },
-                    "browser": {
-                        "major": browser_major[0],
-                        "version": browser_version,
-                        "name": browser_name
-                    }
+            data[0]["user_agent"] =  {
+                "engine": {
+                    "version": engine_version,
+                    "name": engine_name
+                },
+                "os": {
+                    "version": os_version,
+                    "name": os_name
+                },
+                "browser": {
+                    "major": browser_major,
+                    "version": browser_version,
+                    "name": browser_name
                 }
+            }
 
             #we don't always have a referrer
             if (len(remaining_elements)>4):

@@ -1,0 +1,14 @@
+README
+
+To interact with Keen first you need to install pip. go to the install_pip directory and type
+"python get-pip.py"
+
+
+Next install keen and type
+"pip install keen"
+
+
+Review docs for interacting
+https://github.com/keenlabs/KeenClient-Python
+
+
